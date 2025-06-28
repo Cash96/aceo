@@ -19,11 +19,17 @@ export default function Home() {
         />
         <h1 className="text-3xl font-bold">ACEO Admin Dashboard</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Manage all training operations for your assistant
+          Manage all training and assistant operations
         </p>
       </header>
 
       <main className="flex flex-col sm:flex-row gap-6">
+        <button
+          onClick={() => router.push('/chat')}
+          className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 text-lg shadow-md"
+        >
+          💬 Chat with Department
+        </button>
         <button
           onClick={() => router.push('/training')}
           className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg shadow-md"
