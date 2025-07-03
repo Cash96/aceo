@@ -9,14 +9,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-10 space-y-12 bg-white dark:bg-black text-black dark:text-white">
       <header className="flex flex-col items-center space-y-2">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
+        
         <h1 className="text-3xl font-bold">ACEO Admin Dashboard</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Manage all training and assistant operations
@@ -41,6 +34,12 @@ export default function Home() {
           className="rounded-lg bg-red-600 hover:bg-red-700 text-white px-6 py-3 text-lg shadow-md"
         >
           🧹 Flush Training Data
+        </button>
+        <button
+          onClick={() => router.push('/admin/github-site-manager')}
+          className="rounded-lg bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg shadow-md"
+        >
+          🖥️ GitHub Site Manager
         </button>
       </main>
 
