@@ -11,23 +11,35 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const rootDomain = searchParams.get('rootDomain');
 
-    if (!rootDomain) {
-      return NextResponse.json({ error: 'Missing rootDomain' }, { status: 400 });
+    if (rootDomain) {
+      // Return stats for just this domain
+      const visits = await SiteVisit.find({
+        user: 'user1',
+        rootDomain
+      })
+        .sort({ accessedAt: -1 })
+        .lean();
+
+      const totalTime = visits.reduce((sum, visit) => sum + (visit.timeOnSite || 0), 0);
+      const lastVisit = visits[0]?.accessedAt || null;
+
+      return NextResponse.json({
+        rootDomain,
+        totalTime,
+        lastVisit
+      });
+    } else {
+      // Return all visits for calendar
+      const visits = await SiteVisit.find({
+        user: 'user1'
+      })
+        .sort({ accessedAt: -1 })
+        .lean();
+
+      return NextResponse.json({
+        visits
+      });
     }
-
-    const visits = await SiteVisit.find({
-      user: 'user1',
-      rootDomain
-    }).sort({ accessedAt: -1 }).lean();
-
-    const totalTime = visits.reduce((sum, visit) => sum + (visit.timeOnSite || 0), 0);
-    const lastVisit = visits[0]?.accessedAt || null;
-
-    return NextResponse.json({
-      rootDomain,
-      totalTime,
-      lastVisit
-    });
   } catch (err: any) {
     console.error('❌ Failed to fetch site visits:', err);
     return NextResponse.json(
