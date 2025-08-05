@@ -200,3 +200,7 @@ export default function DepartmentChatPage() {
     </main>
   )
 }
+
+// TODO:
+// fix the 3 dots position so they align where the chat output will be
+// add markdown processing
