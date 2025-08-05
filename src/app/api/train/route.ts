@@ -11,17 +11,19 @@ import {
 } from '@/app/lib/openai';
 import { FileRecord } from '@/app/models/FileRecords';
 import { connectMongo } from '@/app/lib/mongobd';
+import { logger } from '@/utils/logger';
 
 export async function POST(req: NextRequest) {
   const { department, folderId, vectorStoreId } = await req.json();
 
   if (!folderId || !vectorStoreId) {
+    logger.warn('⚠️ Missing folderId or vectorStoreId', { department, folderId, vectorStoreId });
     return new Response('Missing folderId or vectorStoreId', { status: 400 });
   }
 
   try {
     await connectMongo();
-    console.log('✅ Connected to MongoDB');
+    logger.info('✅ Connected to MongoDB');
 
     const drive = await getDriveClient();
     const response = await drive.files.list({
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
     });
 
     const files = response.data.files || [];
-    console.log(`📂 Found ${files.length} file(s) in ${department} folder`);
+    logger.info(`📂 Found ${files.length} file(s)`, { department, folderId });
 
     for (const file of files) {
       if (!file.id || !file.name || !file.modifiedTime) continue;
@@ -42,11 +44,11 @@ export async function POST(req: NextRequest) {
       if (existing) {
         const unchanged = new Date(existing.lastModified).getTime() === lastModified.getTime();
         if (unchanged) {
-          console.log(`⏩ Skipping ${file.name} (no changes)`);
+          logger.info(`⏩ Skipping (no changes)`, { fileName: file.name });
           continue;
         }
 
-        console.log(`🔁 Reprocessing ${file.name} (modified since last upload)`);
+        logger.info(`🔁 Reprocessing (modified since last upload)`, { fileName: file.name });
 
         // 🧹 Step 1: Remove old file from vector store
         await deleteFileFromVectorStore(existing.vectorStoreId, existing.openaiId);
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
         // 🧹 Step 2: Delete old file from OpenAI
         await deleteFileFromOpenAI(existing.openaiId);
       } else {
-        console.log(`🆕 New file detected: ${file.name}`);
+        logger.info(`🆕 New file detected`, { fileName: file.name });
       }
 
       // 📥 Step 3: Download file
@@ -81,11 +83,11 @@ export async function POST(req: NextRequest) {
 
       // ⬆️ Step 5: Upload to OpenAI
       const openaiId = await uploadFileToOpenAI(buffer, safeFileName);
-      console.log(`✅ Uploaded ${safeFileName} to OpenAI as ${openaiId}`);
+      logger.info(`✅ Uploaded to OpenAI`, { fileName: safeFileName, openaiId });
 
       // 🔗 Step 6: Attach to vector store
       await attachFileToVectorStore(vectorStoreId, openaiId);
-      console.log(`🔗 Attached ${safeFileName} to vector store ${vectorStoreId}`);
+      logger.info(`🔗 Attached to vector store`, { fileName: safeFileName, vectorStoreId });
 
       // 💾 Step 7: Save or update record in MongoDB
       await FileRecord.findOneAndUpdate(
@@ -103,15 +105,16 @@ export async function POST(req: NextRequest) {
       );
 
       if (existing) {
-        console.log(`📘 Updated DB record for ${safeFileName}`);
+        logger.info(`📘 Updated DB record`, { fileName: safeFileName });
       } else {
-        console.log(`📗 Created new DB record for ${safeFileName}`);
+        logger.info(`📗 Created new DB record`, { fileName: safeFileName });
       }
     }
 
+    logger.info(`✅ Training completed`, { department });
     return Response.json({ message: `✅ Training for ${department} completed` });
   } catch (error: any) {
-    console.error('❌ Training error:', error);
+    logger.error('❌ Training error', error);
     return new Response(`Error: ${error.message}`, { status: 500 });
   }
 }

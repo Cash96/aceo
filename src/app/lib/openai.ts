@@ -1,6 +1,6 @@
-// openai.ts
 import axios from 'axios';
 import FormData from 'form-data';
+import { logger } from '@/utils/logger';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 const OPENAI_API_BASE = 'https://api.openai.com/v1';
@@ -13,26 +13,35 @@ const jsonHeaders = {
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export async function uploadFileToOpenAI(buffer: Buffer, fileName: string): Promise<string> {
+  logger.info('⬆️ Uploading file to OpenAI', { fileName });
+
   const formData = new FormData();
-  formData.append('file', buffer, fileName); // Directly using buffer
+  formData.append('file', buffer, fileName);
   formData.append('purpose', 'assistants');
 
-  const response = await axios.post(`${OPENAI_API_BASE}/files`, formData, {
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      ...formData.getHeaders(),
-    },
-    maxBodyLength: Infinity,
-  });
+  try {
+    const response = await axios.post(`${OPENAI_API_BASE}/files`, formData, {
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        ...formData.getHeaders(),
+      },
+      maxBodyLength: Infinity,
+    });
 
-  const fileId = response.data.id;
-  console.log(`✅ Uploaded ${fileName} to OpenAI as ${fileId}`);
+    const fileId = response.data.id;
+    logger.info('✅ File uploaded to OpenAI', { fileName, fileId });
 
-  await waitForFileProcessed(fileId);
-  return fileId;
+    await waitForFileProcessed(fileId);
+    return fileId;
+  } catch (error: any) {
+    logger.error('❌ Failed to upload file to OpenAI', { fileName, error: error.message });
+    throw error;
+  }
 }
 
 export async function waitForFileProcessed(fileId: string, timeoutMs = 10000) {
+  logger.info('⏳ Waiting for file to be processed', { fileId });
+
   const interval = 1000;
   const maxAttempts = timeoutMs / interval;
   let attempts = 0;
@@ -43,10 +52,10 @@ export async function waitForFileProcessed(fileId: string, timeoutMs = 10000) {
     });
 
     const status = response.data.status;
-    console.log(`⏳ File status: ${status}`);
+    logger.debug('📄 File processing status', { fileId, status });
 
     if (status === 'processed') {
-      console.log('✅ File is processed and ready.');
+      logger.info('✅ File processed successfully', { fileId });
       return;
     }
 
@@ -61,42 +70,57 @@ export async function waitForFileProcessed(fileId: string, timeoutMs = 10000) {
 }
 
 export async function attachFileToVectorStore(vectorStoreId: string, fileId: string): Promise<void> {
-  console.log(`📦 Attaching file ${fileId} to vector store ${vectorStoreId}`);
+  logger.info('📦 Attaching file to vector store', { fileId, vectorStoreId });
 
   try {
-    const response = await axios.post(
+    await axios.post(
       `${OPENAI_API_BASE}/vector_stores/${vectorStoreId}/files`,
       { file_id: fileId },
       { headers: jsonHeaders }
     );
 
-    console.log(`📎 Attached file ${fileId} to vector store ${vectorStoreId}`);
+    logger.info('📎 File attached to vector store', { fileId, vectorStoreId });
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
-      console.error('❌ OpenAI Vector Store Error Details:', error.response?.data);
+      logger.error('❌ OpenAI Vector Store API error', {
+        fileId,
+        vectorStoreId,
+        details: error.response?.data,
+      });
     }
     throw error;
   }
 }
 
 export async function deleteFileFromVectorStore(vectorStoreId: string, fileId: string): Promise<void> {
+  logger.info('🗑️ Deleting file from vector store', { fileId, vectorStoreId });
+
   try {
     await axios.delete(`${OPENAI_API_BASE}/vector_stores/${vectorStoreId}/files/${fileId}`, {
       headers: jsonHeaders,
     });
-    console.log(`🗑️ Deleted file ${fileId} from vector store ${vectorStoreId}`);
+    logger.info('✅ File deleted from vector store', { fileId, vectorStoreId });
   } catch (error: any) {
-    console.warn(`⚠️ Failed to delete file from vector store: ${fileId}`, error.response?.data || error.message);
+    logger.warn('⚠️ Failed to delete file from vector store', {
+      fileId,
+      vectorStoreId,
+      details: error.response?.data || error.message,
+    });
   }
 }
 
 export async function deleteFileFromOpenAI(fileId: string): Promise<void> {
+  logger.info('🗑️ Deleting file from OpenAI', { fileId });
+
   try {
     await axios.delete(`${OPENAI_API_BASE}/files/${fileId}`, {
       headers: jsonHeaders,
     });
-    console.log(`🗑️ Deleted file ${fileId} from OpenAI`);
+    logger.info('✅ File deleted from OpenAI', { fileId });
   } catch (error: any) {
-    console.warn(`⚠️ Failed to delete OpenAI file: ${fileId}`, error.response?.data || error.message);
+    logger.warn('⚠️ Failed to delete file from OpenAI', {
+      fileId,
+      details: error.response?.data || error.message,
+    });
   }
 }

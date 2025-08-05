@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import { logger } from '@/utils/logger';
 
 export const runtime = 'edge';
 
@@ -7,22 +8,23 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  console.log('📥 Received POST /api/chat/user-stream');
+  logger.info('📥 Received POST /api/chat/user-stream');
 
   let body;
   try {
     body = await req.json();
   } catch (err) {
-    console.error('❌ Failed to parse JSON body:', err);
+    logger.error('❌ Failed to parse JSON body', err);
     return new Response('Invalid JSON body', { status: 400 });
   }
 
   const { message, chatAssistantId, threadId } = body;
-  console.log(`✉️ Incoming message: ${message}`);
-  console.log(`🧠 Assistant ID: ${chatAssistantId}`);
-  console.log(`🧵 Provided threadId: ${threadId || 'none'}`);
+  logger.info(`✉️ Incoming message: ${message}`);
+  logger.info(`🧠 Assistant ID: ${chatAssistantId}`);
+  logger.info(`🧵 Provided threadId: ${threadId || 'none'}`);
 
   if (!chatAssistantId) {
+    logger.error('❌ Missing chatAssistantId');
     return new Response('Missing chatAssistantId', { status: 400 });
   }
 
@@ -32,21 +34,21 @@ export async function POST(req: Request) {
     if (!threadIdToUse) {
       const thread = await openai.beta.threads.create();
       threadIdToUse = thread.id;
-      console.log(`📎 Created new thread: ${threadIdToUse}`);
+      logger.info(`📎 Created new thread: ${threadIdToUse}`);
     } else {
-      console.log(`🔄 Resuming thread: ${threadIdToUse}`);
+      logger.info(`🔄 Resuming thread: ${threadIdToUse}`);
     }
 
     await openai.beta.threads.messages.create(threadIdToUse, {
       role: 'user',
       content: message,
     });
-    console.log('📨 Added user message to thread');
+    logger.info('📨 Added user message to thread');
 
     const stream = await openai.beta.threads.runs.stream(threadIdToUse, {
       assistant_id: chatAssistantId,
     });
-    console.log('🧠 Assistant run stream started...');
+    logger.info('🧠 Assistant run stream started...');
 
     const encoder = new TextEncoder();
 
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
                 for (const block of contentBlocks) {
                   const value = block?.text?.value;
                   if (typeof value === 'string') {
-                    console.log('📤 Streaming token:', value);
+                    logger.debug('📤 Streaming token', { token: value });
                     controller.enqueue(encoder.encode(value));
                     await Promise.resolve(); // flush to client
                   }
@@ -69,10 +71,10 @@ export async function POST(req: Request) {
             }
           }
         } catch (err) {
-          console.error('⚠️ Streaming error:', err);
+          logger.error('⚠️ Streaming error', err);
           controller.enqueue(encoder.encode('\n⚠️ Error while streaming response.\n'));
         } finally {
-          console.log('✅ Stream completed.');
+          logger.info('✅ Stream completed.');
           controller.close();
         }
       },
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    console.error('❌ Fatal error:', err);
+    logger.error('❌ Fatal error', err);
     return new Response('Internal Server Error', { status: 500 });
   }
 }

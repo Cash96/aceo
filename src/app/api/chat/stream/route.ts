@@ -1,5 +1,6 @@
 import { OpenAI } from 'openai';
 import { departmentConfig } from '@/config/training';
+import { logger } from '@/utils/logger';
 
 export const runtime = 'edge';
 
@@ -8,40 +9,40 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  console.log('📥 Received POST /api/chat/stream');
+  logger.info('📥 Received POST /api/chat/stream');
 
   let body;
   try {
     body = await req.json();
   } catch (err) {
-    console.error('❌ Failed to parse JSON body:', err);
+    logger.error('❌ Failed to parse JSON body', err);
     return new Response('Invalid JSON body', { status: 400 });
   }
 
   const { message, department } = body;
-  console.log(`🔍 Incoming department: ${department}`);
-  console.log(`✉️ Incoming message: ${message}`);
+  logger.info(`🔍 Incoming department: ${department}`);
+  logger.info(`✉️ Incoming message: ${message}`);
 
   const config = departmentConfig[department as keyof typeof departmentConfig];
   if (!config?.assistantId) {
-    console.error(`❌ No assistantId found for department: ${department}`);
+    logger.error(`❌ No assistantId found for department: ${department}`);
     return new Response(`❌ Invalid or missing assistantId for department: ${department}`, { status: 400 });
   }
 
   try {
     const thread = await openai.beta.threads.create();
-    console.log(`📎 Created thread: ${thread.id}`);
+    logger.info(`📎 Created thread`, { threadId: thread.id });
 
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',
       content: `Department: ${department}\n\n${message}`,
     });
-    console.log('📨 Added user message to thread');
+    logger.info('📨 Added user message to thread');
 
     const stream = await openai.beta.threads.runs.stream(thread.id, {
       assistant_id: config.assistantId,
     });
-    console.log('🧠 Assistant run stream started...');
+    logger.info('🧠 Assistant run stream started...');
 
     const encoder = new TextEncoder();
 
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
                 for (const block of contentBlocks) {
                   const value = block?.text?.value;
                   if (typeof value === 'string') {
-                    console.log('📤 Streaming token:', value);
+                    logger.debug('📤 Streaming token', { token: value });
                     controller.enqueue(encoder.encode(value));
                     await Promise.resolve(); // flush to client
                   }
@@ -64,10 +65,10 @@ export async function POST(req: Request) {
             }
           }
         } catch (err) {
-          console.error('⚠️ Streaming error:', err);
+          logger.error('⚠️ Streaming error', err);
           controller.enqueue(encoder.encode('\n⚠️ Error while streaming response.\n'));
         } finally {
-          console.log('✅ Stream completed.');
+          logger.info('✅ Stream completed');
           controller.close();
         }
       },
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    console.error('❌ Fatal error:', err);
+    logger.error('❌ Fatal error', err);
     return new Response('Internal Server Error', { status: 500 });
   }
 }

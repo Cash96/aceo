@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/app/lib/mongobd';
 import SiteVisit from '@/app/models/SiteVisit';
 import { OpenAI } from 'openai';
+import { logger } from '@/utils/logger';
 
 export const runtime = 'nodejs';
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     if (!rawTitle) return bad('Missing rawTitle');
 
     if (blacklisted.some(domain => rootDomain.includes(domain))) {
-      console.log('🚫 Skipping blacklisted site:', rootDomain);
+      logger.info('🚫 Skipping blacklisted site', { rootDomain });
       return NextResponse.json({ message: 'Site ignored (blacklisted)' });
     }
 
@@ -56,11 +57,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (visit) {
-      console.log(`🔄 Updating existing visit for ${rootDomain}`);
+      logger.info(`🔄 Updating existing visit`, { rootDomain });
       visit.timeOnSite += timeOnSite;
       visit.accessedAt = accessedAt;
     } else {
-      console.log(`🆕 Creating new visit for ${rootDomain}`);
+      logger.info(`🆕 Creating new visit`, { rootDomain });
 
       // Check if we already have enrichment cached
       const previousEnriched = await SiteVisit.findOne({
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
       let enrichment;
 
       if (previousEnriched) {
-        console.log(`♻️ Reusing enrichment for ${rootDomain}`);
+        logger.info(`♻️ Reusing enrichment`, { rootDomain });
         enrichment = {
           title: previousEnriched.genTitle,
           description: previousEnriched.genDescription,
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
           confidence: previousEnriched.confidence || ''
         };
       } else {
-        console.log(`🧠 Running AI enrichment for ${rootDomain}`);
+        logger.info(`🧠 Running AI enrichment`, { rootDomain });
         enrichment = await enrichWithAI(pageContent || '');
       }
 
@@ -100,9 +101,11 @@ export async function POST(req: NextRequest) {
 
     await visit.save();
 
+    logger.info('✅ Site visit recorded', { rootDomain, timeOnSite });
+
     return NextResponse.json({ message: '✅ Site visit recorded', visit });
   } catch (err: any) {
-    console.error('❌ Failed to record site visit:', err);
+    logger.error('❌ Failed to record site visit', err);
     return NextResponse.json(
       { error: 'Failed to record site visit' },
       { status: 500 }
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest) {
 
 // Helper to return bad request
 function bad(msg: string) {
-  console.warn(`⚠️ Bad request: ${msg}`);
+  logger.warn(`⚠️ Bad request: ${msg}`);
   return NextResponse.json({ error: msg }, { status: 400 });
 }
 
@@ -159,7 +162,7 @@ If the content is clearly not educational, still pick the most appropriate subje
       confidence: json.confidence || ''
     };
   } catch {
-    console.warn('⚠️ Failed to parse AI enrichment response.');
+    logger.warn('⚠️ Failed to parse AI enrichment response.');
     return { title: '', description: '', subject: '', confidence: '' };
   }
 }

@@ -1,5 +1,5 @@
-// src/app/api/chat/thread-history/route.ts
 import { OpenAI } from 'openai';
+import { logger } from '@/utils/logger';
 
 export const runtime = 'edge';
 
@@ -8,19 +8,19 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  console.log('📥 Received POST /api/chat/thread-history');
+  logger.info('📥 Received POST /api/chat/thread-history');
 
   let body;
   try {
     body = await req.json();
   } catch (err) {
-    console.error('❌ Failed to parse JSON body:', err);
+    logger.error('❌ Failed to parse JSON body', err);
     return new Response('Invalid JSON body', { status: 400 });
   }
 
   const { threadId } = body;
   if (!threadId) {
-    console.error('❌ Missing threadId');
+    logger.error('❌ Missing threadId');
     return new Response(JSON.stringify({ error: 'Missing threadId' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   try {
     const messagesRes = await openai.beta.threads.messages.list(threadId);
 
-    // sort by created_at ascending
+    // Sort by created_at ascending
     const sortedMessages = messagesRes.data
       .sort((a: any, b: any) => a.created_at - b.created_at)
       .map((msg: any) => ({
@@ -39,13 +39,15 @@ export async function POST(req: Request) {
         timestamp: msg.created_at,
       }));
 
-    console.log(`✅ Retrieved and sorted ${sortedMessages.length} messages for thread ${threadId}`);
+    logger.info(`✅ Retrieved and sorted ${sortedMessages.length} messages`, {
+      threadId,
+    });
 
     return new Response(JSON.stringify({ messages: sortedMessages }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('❌ Failed to fetch thread messages', err);
+    logger.error('❌ Failed to fetch thread messages', err);
     return new Response(JSON.stringify({ error: 'Failed to fetch thread' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
