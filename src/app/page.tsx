@@ -1,50 +1,69 @@
-'use client';
+'use client'
 
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
-  const router = useRouter();
+  const router = useRouter()
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-10 space-y-12 bg-white dark:bg-black text-black dark:text-white">
-      <header className="flex flex-col items-center space-y-2">
-        <h1 className="text-3xl font-bold">ACEO Admin Dashboard</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Manage all training, assistants, and open-web learning
-        </p>
-      </header>
+    <main className="min-h-screen flex flex-col items-center justify-center px-8 py-12 bg-[#E1FFFF]">
+      {/* Card Container */}
+      <div className="w-full max-w-3xl bg-white border border-[#00003D]/20 shadow-sm rounded-lg p-10 flex flex-col items-center">
+        
+        {/* Header */}
+        <header className="flex flex-col items-center space-y-2 mb-8">
+          <h1 className="text-3xl font-semibold text-[#00003D]">
+            ACEO Admin Dashboard
+          </h1>
+          <p className="text-sm text-black text-center max-w-md">
+            Manage all training, assistants, and open-web learning
+          </p>
+        </header>
 
-      <main className="flex flex-col sm:flex-row flex-wrap gap-6 justify-center">
-        <button
-          onClick={() => router.push('/chat')}
-          className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 text-lg shadow-md"
-        >
-          💬 Chat with Department
-        </button>
-        <button
-          onClick={() => router.push('/training')}
-          className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg shadow-md"
-        >
-          📥 Train New Data
-        </button>
-        <button
-          onClick={() => router.push('/admin/reset-training')}
-          className="rounded-lg bg-red-600 hover:bg-red-700 text-white px-6 py-3 text-lg shadow-md"
-        >
-          🧹 Flush Training Data
-        </button>
-        <button
-          onClick={() => router.push('/tracking')}
-          className="rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 text-lg shadow-md"
-        >
-          📊 Open-Web Learning Tracker
-        </button>
-      </main>
+        {/* Main Buttons */}
+        <section className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center w-full">
+          <button
+            onClick={() => router.push('/chat')}
+            className="w-full sm:w-auto px-6 py-3 text-base font-medium text-white 
+                       bg-[#4141FF] hover:bg-[#00003D] focus:outline-none focus:ring-2 focus:ring-[#FFE45E]
+                       rounded-md shadow-sm transition-colors duration-200"
+          >
+            💬 Chat with Department
+          </button>
 
-      <footer className="pt-10 text-sm text-gray-400">
-        Powered by Next.js & OpenAI · v1.0
-      </footer>
-    </div>
-  );
+          <button
+            onClick={() => router.push('/training')}
+            className="w-full sm:w-auto px-6 py-3 text-base font-medium text-white 
+                       bg-[#4141FF] hover:bg-[#00003D] focus:outline-none focus:ring-2 focus:ring-[#FFE45E]
+                       rounded-md shadow-sm transition-colors duration-200"
+          >
+            📥 Train New Data
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/reset-training')}
+            className="w-full sm:w-auto px-6 py-3 text-base font-medium text-black 
+                       bg-[#FFE45E] hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-[#00003D]
+                       rounded-md shadow-sm transition-colors duration-200"
+          >
+            🧹 Flush Training Data
+          </button>
+
+          <button
+            onClick={() => router.push('/tracking')}
+            className="w-full sm:w-auto px-6 py-3 text-base font-medium text-white 
+                       bg-[#4141FF] hover:bg-[#00003D] focus:outline-none focus:ring-2 focus:ring-[#FFE45E]
+                       rounded-md shadow-sm transition-colors duration-200"
+          >
+            📊 Open-Web Learning Tracker
+          </button>
+        </section>
+
+        {/* Footer */}
+        <footer className="pt-8 mt-8 border-t border-[#00003D]/20 text-xs text-[#000000]">
+          LOL Not School Stack (I wish)
+        </footer>
+      </div>
+    </main>
+  )
 }

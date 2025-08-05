@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 
 const departmentLabels: Record<string, string> = {
   hr: 'HR',
@@ -10,127 +10,110 @@ const departmentLabels: Record<string, string> = {
   franchise_sales: 'Franchise Sales',
   products_and_programs: 'Products & Programs',
   legal: 'Legal',
-};
+}
 
 export default function DepartmentChatPage() {
-  const { department } = useParams();
-  const router = useRouter();
-  const [message, setMessage] = useState('');
-  const [response, setResponse] = useState('');
-  const [loading, setLoading] = useState(false);
-  const controllerRef = useRef<AbortController | null>(null);
+  const { department } = useParams()
+  const router = useRouter()
+  const [message, setMessage] = useState('')
+  const [response, setResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+  const controllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    console.log('📥 Loaded department chat page');
     if (typeof department === 'string') {
-      console.log(`🔍 Department param: ${department}`);
+      console.log(`📥 Loaded department chat page: ${department}`)
     }
-  }, [department]);
+  }, [department])
 
+  // Handle invalid department
   if (!department || typeof department !== 'string' || !departmentLabels[department]) {
-    console.warn('❌ Invalid department route param:', department);
     return (
-      <div className="p-6">
-        <h1 className="text-xl font-semibold text-red-600">❌ Invalid Department</h1>
-        <button
-          onClick={() => {
-            console.log('🔙 Returning to department selector');
-            router.push('/chat');
-          }}
-          className="mt-4 text-blue-500 underline"
-        >
-          Go Back
-        </button>
-      </div>
-    );
+      <main className="min-h-screen bg-[#E1FFFF] flex flex-col items-center justify-center px-8 py-12">
+        <div className="w-full max-w-lg bg-white border border-[#00003D]/20 shadow-sm rounded-lg p-8 text-center">
+          <h1 className="text-xl font-semibold text-red-600 mb-4">❌ Invalid Department</h1>
+          <button
+            onClick={() => router.push('/chat')}
+            className="px-6 py-3 text-white bg-[#4141FF] hover:bg-[#00003D] focus:outline-none focus:ring-2 focus:ring-[#FFE45E] rounded-md"
+          >
+            Go Back
+          </button>
+        </div>
+      </main>
+    )
   }
 
   const handleSend = async () => {
-    if (!message.trim()) {
-      console.log('⚠️ Empty message, skipping send.');
-      return;
-    }
+    if (!message.trim()) return
 
-    console.log(`📨 Sending message to /api/chat/stream for ${department}`);
-    setLoading(true);
-    setResponse('');
-    controllerRef.current = new AbortController();
+    setLoading(true)
+    setResponse('')
+    controllerRef.current = new AbortController()
 
     try {
-      console.log('📤 Awaiting response from server...');
       const res = await fetch('/api/chat/stream', {
         method: 'POST',
         body: JSON.stringify({ message, department }),
         signal: controllerRef.current.signal,
-      });
+      })
 
-      if (!res.ok || !res.body) {
-        throw new Error(`❌ Failed to fetch stream: ${res.status}`);
-      }
+      if (!res.ok || !res.body) throw new Error(`Failed to fetch stream: ${res.status}`)
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let fullResponse = '';
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let fullResponse = ''
 
-      console.log('📡 Starting to read stream...');
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('📴 Stream ended from server.');
-          break;
-        }
+        const { done, value } = await reader.read()
+        if (done) break
 
-        const chunk = decoder.decode(value, { stream: true });
-        console.log('📩 Received chunk:', chunk);
-
-        fullResponse += chunk;
-        setResponse((prev) => {
-          const next = prev + chunk;
-          console.log('🖨️ Updated UI with:', next);
-          return next;
-        });
+        const chunk = decoder.decode(value, { stream: true })
+        fullResponse += chunk
+        setResponse((prev) => prev + chunk)
       }
-
-      console.log('✅ Full assistant response:', fullResponse);
     } catch (err) {
-      if (controllerRef.current?.signal.aborted) {
-        console.warn('🛑 Request was aborted by the user.');
-      } else {
-        console.error('❌ Fetch error:', err);
-        setResponse('There was an error. Please try again.');
+      if (!controllerRef.current?.signal.aborted) {
+        setResponse('There was an error. Please try again.')
       }
     }
 
-    setLoading(false);
-    console.log('✅ Message handling complete');
-  };
+    setLoading(false)
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-white dark:bg-black text-black dark:text-white">
-      <h1 className="text-2xl font-bold mb-4">
-        💬 Chat with {departmentLabels[department]}
-      </h1>
+    <main className="min-h-screen bg-[#E1FFFF] text-black flex flex-col items-center justify-center px-8 py-12">
+      <div className="w-full max-w-2xl bg-white border border-[#00003D]/20 shadow-sm rounded-lg p-8 flex flex-col">
+        
+        {/* Header */}
+        <h1 className="text-2xl font-semibold text-[#00003D] mb-6 text-center">
+          💬 Chat with {departmentLabels[department]}
+        </h1>
 
-      <textarea
-        className="w-full p-2 border rounded mb-4"
-        rows={4}
-        placeholder="Type your message..."
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
+        {/* Message Input */}
+        <textarea
+          className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-[#4141FF] mb-4"
+          rows={4}
+          placeholder="Type your message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
 
-      <button
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:opacity-50"
-        onClick={handleSend}
-        disabled={loading}
-      >
-        {loading ? 'Sending...' : 'Send Message'}
-      </button>
+        {/* Send Button */}
+        <button
+          onClick={handleSend}
+          disabled={loading}
+          className="self-end px-6 py-3 bg-[#4141FF] hover:bg-[#00003D] text-white rounded-md font-medium 
+                     disabled:opacity-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FFE45E]"
+        >
+          {loading ? 'Sending...' : 'Send Message'}
+        </button>
 
-      <div className="mt-6 p-4 border rounded bg-gray-100 dark:bg-gray-900 min-h-[100px] whitespace-pre-wrap">
-        {response}
-        {loading && <span className="animate-pulse">|</span>}
+        {/* Response Area */}
+        <div className="mt-6 p-4 border border-[#00003D]/20 rounded-md bg-[#E1FFFF] min-h-[120px] whitespace-pre-wrap">
+          {response}
+          {loading && <span className="animate-pulse">|</span>}
+        </div>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

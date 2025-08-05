@@ -1,7 +1,6 @@
 'use client'
 
-import React from 'react';
-
+import React from 'react'
 import { departmentConfig } from '@/config/training'
 
 export default function TrainingPage() {
@@ -32,26 +31,27 @@ export default function TrainingPage() {
   }
 
   return (
-    <main style={{ padding: '2rem' }}>
-      <h1 style={{ marginBottom: '1rem' }}>Trigger Initial Training</h1>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {Object.entries(departmentConfig).map(([key]) => (
-          <button
-            key={key}
-            onClick={() => handleTrain(key as keyof typeof departmentConfig)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              fontSize: '1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              backgroundColor: '#0070f3',
-              color: '#fff',
-              border: 'none',
-            }}
-          >
-            Train {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          </button>
-        ))}
+    <main className="min-h-screen bg-[#E1FFFF] px-8 py-12 flex flex-col items-center">
+      <div className="w-full max-w-xl bg-white border border-[#00003D]/20 shadow-sm rounded-lg p-8">
+        <h1 className="text-2xl font-semibold text-[#00003D] mb-6 text-center">
+          Trigger Initial Training
+        </h1>
+
+        <div className="flex flex-col gap-3">
+          {Object.entries(departmentConfig).map(([key]) => (
+            <button
+              key={key}
+              onClick={() => handleTrain(key as keyof typeof departmentConfig)}
+              className="w-full px-6 py-3 text-base font-medium text-white 
+                         bg-[#4141FF] hover:bg-[#00003D] 
+                         focus:outline-none focus:ring-2 focus:ring-[#FFE45E]
+                         rounded-md border border-transparent 
+                         transition-colors duration-200"
+            >
+              Train {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </button>
+          ))}
+        </div>
       </div>
     </main>
   )

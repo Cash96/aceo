@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
 
 const departments = [
   'hr',
@@ -9,7 +9,7 @@ const departments = [
   'franchise_sales',
   'products_and_programs',
   'legal',
-];
+]
 
 const departmentLabels: Record<string, string> = {
   hr: 'HR',
@@ -18,34 +18,41 @@ const departmentLabels: Record<string, string> = {
   franchise_sales: 'Franchise Sales',
   products_and_programs: 'Products & Programs',
   legal: 'Legal',
-};
+}
 
 export default function ChatSelectorPage() {
-  const router = useRouter();
+  const router = useRouter()
 
   const handleDepartmentClick = (dept: string) => {
-    console.log(`🔁 Navigating to /chat/${dept}`);
-    router.push(`/chat/${dept}`);
-  };
-
-  console.log('🧠 ChatSelectorPage rendered');
+    console.log(`🔁 Navigating to /chat/${dept}`)
+    router.push(`/chat/${dept}`)
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-white dark:bg-black text-black dark:text-white">
-      <h1 className="text-2xl font-bold mb-6">🧠 Select a Department to Chat With</h1>
+    <main className="min-h-screen bg-[#E1FFFF] text-black flex flex-col items-center justify-center px-8 py-12">
+      <div className="w-full max-w-2xl bg-white border border-[#00003D]/20 shadow-sm rounded-lg p-8 flex flex-col">
+        
+        {/* Page Title */}
+        <h1 className="text-2xl font-semibold text-[#00003D] mb-6 text-center">
+          🧠 Select a Department to Chat With
+        </h1>
 
-      <ul className="space-y-4">
-        {departments.map((dept) => (
-          <li key={dept}>
-            <button
-              onClick={() => handleDepartmentClick(dept)}
-              className="text-lg text-blue-600 hover:underline"
-            >
-              {departmentLabels[dept]}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+        {/* Department List */}
+        <ul className="flex flex-col gap-3">
+          {departments.map((dept) => (
+            <li key={dept}>
+              <button
+                onClick={() => handleDepartmentClick(dept)}
+                className="w-full px-6 py-3 text-base font-medium text-white 
+                           bg-[#4141FF] hover:bg-[#00003D] focus:outline-none focus:ring-2 focus:ring-[#FFE45E]
+                           rounded-md shadow-sm transition-colors duration-200"
+              >
+                {departmentLabels[dept]}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </main>
+  )
 }
